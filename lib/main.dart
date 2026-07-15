@@ -7,15 +7,25 @@ import 'services/store.dart';
 import 'services/toolbox.dart';
 import 'theme.dart';
 
+import 'services/gamification_engine.dart';
+import 'services/review_service.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await PileStore.instance.init();
-  Purchases.init(); // fire-and-forget
-  Notify.rescheduleAll(); // release-day countdowns only
+
+  GamificationEngine.instance.init();
+  ReviewService.instance.init();
+
+  Purchases.init();
+  Notify.rescheduleAll();
+
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
   ));
+
   runApp(const PileApp());
 }
 

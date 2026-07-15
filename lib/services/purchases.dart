@@ -10,13 +10,19 @@ class Purchases {
   static StreamSubscription<List<PurchaseDetails>>? _sub;
   static ProductDetails? proProduct;
 
+  static final StreamController<bool> _upgradeEventController =
+      StreamController<bool>.broadcast();
+  static Stream<bool> get upgradeEvents => _upgradeEventController.stream;
+
   static Future<void> init() async {
     if (!await _iap.isAvailable()) return;
     _sub ??= _iap.purchaseStream.listen(_onPurchases, onError: (_) {});
     final resp = await _iap.queryProductDetails({proId});
     if (resp.productDetails.isNotEmpty) proProduct = resp.productDetails.first;
-    // Silently restore on launch so reinstalls keep Pro.
-    await _iap.restorePurchases();
+
+    try {
+      await _iap.restorePurchases();
+    } catch (_) {}
   }
 
   static Future<void> buyPro() async {
@@ -32,11 +38,23 @@ class Purchases {
       if (p.productID == proId &&
           (p.status == PurchaseStatus.purchased ||
               p.status == PurchaseStatus.restored)) {
+        final bool wasPro = PileStore.instance.isPro;
         await PileStore.instance.setPro(true);
+
+        if (!wasPro && p.status == PurchaseStatus.purchased) {
+          await PileStore.instance.gainXp(500);
+          _upgradeEventController.add(true);
+        }
       }
       if (p.pendingCompletePurchase) {
         await _iap.completePurchase(p);
       }
     }
+  }
+
+  static void dispose() {
+    _upgradeEventController.close();
+    _sub?.cancel();
+    _sub = null;
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,9 @@ class PileStore extends ChangeNotifier {
   static const _kHype = 'pile.hype.v1';
   static const _kPro = 'pile.pro.v1';
   static const _kOnboarded = 'pile.onboarded.v1';
+  static const _kXp = 'pile.gamification.xp.v1';
+  static const _kAchievements = 'pile.gamification.achievements.v1';
+
   static const freeLimit = 25;
 
   late SharedPreferences _prefs;
@@ -19,21 +23,38 @@ class PileStore extends ChangeNotifier {
   bool isPro = false;
   bool onboarded = false;
 
+  int xp = 0;
+  List<String> unlockedAchievements = [];
+
+  int get currentLevel => (xp / 100).floor() + 1;
+  double get levelProgress => (xp % 100) / 100;
+
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     final g = _prefs.getString(_kGames);
     if (g != null) games = GameEntry.decodeList(g);
+
     final h = _prefs.getString(_kHype);
     if (h != null) hype = HypeEntry.decodeList(h);
     hype.sort((a, b) => a.releaseDate.compareTo(b.releaseDate));
+
     isPro = _prefs.getBool(_kPro) ?? false;
     onboarded = _prefs.getBool(_kOnboarded) ?? false;
+
+    xp = _prefs.getInt(_kXp) ?? 0;
+    final achString = _prefs.getString(_kAchievements);
+    if (achString != null) {
+      unlockedAchievements = List<String>.from(jsonDecode(achString));
+    }
+
     notifyListeners();
   }
 
   Future<void> persist() async {
     await _prefs.setString(_kGames, GameEntry.encodeList(games));
     await _prefs.setString(_kHype, HypeEntry.encodeList(hype));
+    await _prefs.setInt(_kXp, xp);
+    await _prefs.setString(_kAchievements, jsonEncode(unlockedAchievements));
     notifyListeners();
   }
 
@@ -51,7 +72,18 @@ class PileStore extends ChangeNotifier {
 
   bool get atFreeLimit => !isPro && games.length >= freeLimit;
 
-  // ---------- The numbers that make the Shame Card ----------
+  Future<void> gainXp(int amount) async {
+    xp += amount;
+    await persist();
+  }
+
+  Future<bool> unlockAchievement(String id) async {
+    if (unlockedAchievements.contains(id)) return false;
+    unlockedAchievements.add(id);
+    await persist();
+    return true;
+  }
+
   int get pileSize =>
       games.where((g) => g.status == GameStatus.backlog).length;
   int get beatenCount =>
@@ -59,7 +91,6 @@ class PileStore extends ChangeNotifier {
   int get ownedCount =>
       games.where((g) => g.status != GameStatus.wishlist).length;
 
-  /// Money sunk into games never started — the headline shame number.
   double get shameMoney => games
       .where((g) => g.status == GameStatus.backlog && g.hoursPlayed == 0)
       .fold(0.0, (s, g) => s + g.pricePaid);
@@ -67,7 +98,6 @@ class PileStore extends ChangeNotifier {
   double get completionRate =>
       ownedCount == 0 ? 0 : beatenCount / ownedCount;
 
-  /// Backlog roulette — the fun way to answer "what should I play?"
   GameEntry? roulette() {
     final pool =
         games.where((g) => g.status == GameStatus.backlog).toList();

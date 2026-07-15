@@ -24,6 +24,9 @@ class PlColors {
   static const magenta = Color(0xFFF050B4);
   static const amber = Color(0xFFF5C64F);
   static const red = Color(0xFFF0564C);
+
+  static const glass = Color(0x99191D26);
+  static const premium = Color(0xFFFFD700);
 }
 
 ThemeData pileTheme() {
@@ -37,6 +40,14 @@ ThemeData pileTheme() {
       surface: PlColors.panel,
       onSurface: PlColors.frost,
       error: PlColors.red,
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      },
     ),
   );
 
