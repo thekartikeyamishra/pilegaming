@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/game.dart';
 import '../services/store.dart';
-import '../services/toolbox.dart';
 import '../theme.dart';
 import 'edit_sheets.dart';
 import 'shame_card.dart';
@@ -416,28 +415,6 @@ class _HomeScreenState extends State<HomeScreen>
                   }).toList(),
                 ),
         ),
-        const SizedBox(height: 8),
-
-        if (Toolbox.items.any((i) => i.url.isNotEmpty))
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 600),
-            builder: (context, opacity, child) =>
-                Opacity(opacity: opacity, child: child),
-            child: Card(
-              child: ListTile(
-                leading: const Icon(Icons.local_offer_outlined,
-                    color: PlColors.amber),
-                title: Text('Deals on games you\'re saving for',
-                    style: t.bodyMedium),
-                subtitle: Text('Authorized stores only. Partner links labeled.',
-                    style: t.bodySmall),
-                trailing: const Icon(Icons.chevron_right, color: PlColors.dim),
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen())),
-              ),
-            ),
-          ),
       ],
     );
   }

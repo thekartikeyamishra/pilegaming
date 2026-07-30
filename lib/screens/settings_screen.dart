@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/store.dart';
-import '../services/toolbox.dart';
 import '../theme.dart';
 import 'paywall_screen.dart';
 
@@ -19,56 +18,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final tools = Toolbox.items.where((i) => i.url.isNotEmpty || !i.isPartner);
+    
     return Scaffold(
       appBar: AppBar(title: Text('Settings', style: t.titleLarge)),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('DEALS TOOLBOX', style: t.labelSmall),
-          const SizedBox(height: 8),
-          Text(
-            'Authorized game stores only — no gray-market keys, ever. "Partner link" rows pay Pile a commission at no cost to you; it keeps the app cheap and ad-free. Check IsThereAnyDeal for the historical low before buying anything.',
-            style: t.bodySmall!.copyWith(height: 1.5),
-          ),
-          const SizedBox(height: 12),
-          if (tools.isEmpty)
-            Text('Deal partners coming soon.',
-                style: t.bodySmall!.copyWith(color: PlColors.dim))
-          else
-            ...tools.map((i) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Card(
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      title: Row(children: [
-                        Flexible(
-                            child: Text(i.name,
-                                style:
-                                    t.titleLarge!.copyWith(fontSize: 15))),
-                        const SizedBox(width: 8),
-                        if (i.isPartner)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: PlColors.amber),
-                            ),
-                            child: Text('PARTNER LINK',
-                                style: t.labelSmall!.copyWith(
-                                    fontSize: 8, color: PlColors.amber)),
-                          ),
-                      ]),
-                      subtitle: Text(i.pitch, style: t.bodySmall),
-                      trailing: const Icon(Icons.open_in_new,
-                          size: 18, color: PlColors.dim),
-                      onTap: () => Toolbox.open(i),
-                    ),
-                  ),
-                )),
-          const SizedBox(height: 20),
           Text('EXPORT', style: t.labelSmall),
           const SizedBox(height: 12),
           Card(
@@ -107,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Text(
-                'Pile has no account, no analytics, and no server. Your library and spending live only on this device. Shame cards share your numbers only when you tap share. Partner links open in your browser and receive nothing about you. Delete the app and everything is gone.',
+                'Pile has no account, no analytics, and no server. Your library and spending live only on this device. Shame cards share your numbers only when you tap share. Delete the app and everything is gone.',
                 style: t.bodyMedium!.copyWith(color: PlColors.dim, height: 1.6),
               ),
             ),

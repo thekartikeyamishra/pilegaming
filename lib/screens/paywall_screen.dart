@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/purchases.dart';
 import '../services/store.dart';
@@ -11,21 +12,58 @@ class PaywallScreen extends StatefulWidget {
 
 class _PaywallScreenState extends State<PaywallScreen> {
   final store = PileStore.instance;
+  StreamSubscription<String>? _errorSubscription;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     store.addListener(_onChange);
+    
+    // Listen for transaction errors or store unavailability and display to the user
+    _errorSubscription = Purchases.errorEvents.listen((errorMessage) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: PlColors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
     store.removeListener(_onChange);
+    _errorSubscription?.cancel();
     super.dispose();
   }
 
   void _onChange() {
+    // Silently pop once the state reflects the Pro upgrade
     if (store.isPro && mounted) Navigator.pop(context);
+  }
+
+  Future<void> _handleBuyPro() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    
+    // The native OS purchase modal will take over after this executes.
+    await Purchases.buyPro();
+    
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _handleRestore() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    
+    await Purchases.restore();
+    
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
@@ -46,6 +84,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Smooth entrance animation for header
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 600),
@@ -81,6 +120,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ),
               ),
               const SizedBox(height: 36),
+              
+              // Feature list highlighting outcomes, not just specs
               Expanded(
                 child: ListView(
                   physics: const BouncingScrollPhysics(),
@@ -96,6 +137,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   ],
                 ),
               ),
+              
               Padding(
                 padding: const EdgeInsets.only(bottom: 24.0, top: 12.0),
                 child: Column(
@@ -105,13 +147,31 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         backgroundColor: PlColors.premium,
                         foregroundColor: PlColors.void_,
                       ),
-                      onPressed: Purchases.buyPro,
-                      child: Text('Unlock Pro Lifetime — $price'),
+                      onPressed: _isLoading ? null : _handleBuyPro,
+                      child: _isLoading 
+                        ? const SizedBox(
+                            width: 24, 
+                            height: 24, 
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5, 
+                              color: PlColors.void_
+                            )
+                          )
+                        : Text('Unlock Pro Lifetime — $price'),
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton(
-                      onPressed: Purchases.restore,
-                      child: const Text('Restore previous purchase'),
+                      onPressed: _isLoading ? null : _handleRestore,
+                      child: _isLoading 
+                        ? const SizedBox(
+                            width: 24, 
+                            height: 24, 
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5, 
+                              color: PlColors.frost
+                            )
+                          )
+                        : const Text('Restore previous purchase'),
                     ),
                   ],
                 ),
